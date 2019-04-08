@@ -1,0 +1,26 @@
+Received: from mail.hs-esslingen.de (134.108.32.78) by exsmtp1.hs-esslingen.de
+(134.108.29.105) with Microsoft SMTP Server (TLS) id 14.3.382.0; Fri, 9 Mar
+2018 14:32:22 +0100
+Received: by mail.hs-esslingen.de (Postfix) id 5436A25A1E; Fri, 9 Mar 2018
+14:32:22 +0100 (CET)
+Delivered-To: rz+certapple@hs-esslingen.de
+Received: from localhost (localhost.localdomain [127.0.0.1]) by
+mail.hs-esslingen.de (Postfix) with ESMTP id 41EB225A1A for
+<rz+certapple@hs-esslingen.de>; Fri, 9 Mar 2018 14:32:22 +0100 (CET)
+Received: from mail.hs-esslingen.de ([127.0.0.1]) by localhost
+(hs-esslingen.de [127.0.0.1]) (amavisd-new, port 10024) with ESMTP id
+Z9gMRwY9OQmF for <rz+certapple@hs-esslingen.de>; Fri, 9 Mar 2018 14:32:18
++0100 (CET)
+Received: from irt-mx.dfn-cert.de (irt-mx.dfn-cert.de [193.174.13.208]) (using
+TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits)) (No client certificate
+requested) by mail.hs-esslingen.de (Postfix) with ESMTPS for
+<rz+certapple@hs-esslingen.de>; Fri, 9 Mar 2018 14:32:17 +0100 (CET)
+Content-Type: multipart/signed; protocol="application/pkcs7-signature";
+micalg=sha-256; boundary="===============8266367120125285105=="
+Subject: Hello World
+To: <rz+certapple@hs-esslingen.de>
+From: =?utf-8?q?DFN-CERT_Portal?= <portal@dfn-cert.de>
+Message-ID: <c4ddcc6e-9bc7-4676-a147-ba21228f29a5@dfn-cert.de>
+Date: Fri, 9 Mar 2018 13:30:40 +0000
+Return-Path: portal@dfn-cert.de
+MIME-Version: 1.0
