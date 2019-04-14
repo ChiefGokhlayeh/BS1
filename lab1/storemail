@@ -1,0 +1,116 @@
+#!/bin/bash
+set -e
+
+function print_usage() {
+    local usage="$(basename "$0") [-h] [-d DIR] FILE... -- Archive mails categorized by date in a directory tree.
+
+    where:
+        -h      show this help text
+        -d DIR  use DIR as root of the directory tree"
+    echo "$usage"
+}
+
+function extract_date_from_str() {
+    OLDIFS=$IFS
+    IFS=': '
+    local split
+    read -r -a split <<< $1
+    IFS=$OLDIFS
+    day=$(printf "%02d" ${split[2]})
+    local monthText=${split[3]}
+    year=${split[4]}
+    hour=${split[5]}
+    minute=${split[6]}
+    second=${split[7]}
+
+    case $monthText in
+        Jan)
+            month=1
+            ;;
+        Feb)
+            month=2
+            ;;
+        Mar)
+            month=3
+            ;;
+        Apr)
+            month=4
+            ;;
+        May)
+            month=5
+            ;;
+        Jun)
+            month=6
+            ;;
+        Jul)
+            month=7
+            ;;
+        Aug)
+            month=8
+            ;;
+        Sep)
+            month=9
+            ;;
+        Oct)
+            month=10
+            ;;
+        Nov)
+            month=11
+            ;;
+        Dec)
+            month=12
+            ;;
+        *)
+            (>2& echo "Unexpected month string!")
+            exit 1
+    esac
+    month=$(printf "%02d" $month)
+}
+
+function archive_mail() {
+    local dir="$5/$2/$3/$4"
+    mkdir -p "$dir"
+    cp "$1" "$dir/"
+}
+
+dir=$PWD
+while getopts hd: opt; do
+    case $opt in
+        h)
+            print_usage
+            exit 0
+            ;;
+        d)
+            dir="$OPTARG"
+            ;;
+        \?)
+            print_usage
+            exit 1
+            ;;
+        :)
+            echo "Missing argument for option: -$OPTARG" >&2
+            print_usage
+            exit 1
+            ;;
+    esac
+done
+
+if [ $(( $# - $OPTIND )) -lt 0 ]; then
+    echo "Expected at least one positional argument: FILE" >&2
+    print_usage
+    exit 1
+fi
+
+# Use getopts index of last consumed option as start of the positional argument
+# list.
+for ((i=$OPTIND; i <= $#; i++)); do
+    file="${@:$i:1}"
+    if [ ! -f "$file" ]; then
+        echo "File not found: $file" >&2
+        continue
+    fi
+    datestring=$(grep -m1 "^Date: " "$file")
+    extract_date_from_str "$datestring"
+
+    archive_mail "$file" $year $month $day "$dir"
+done
