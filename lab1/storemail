@@ -73,6 +73,17 @@ function archive_mail() {
     cp "$1" "$dir/"
 }
 
+function process_file() {
+    if [ ! -f "$1" ]; then
+        echo "File not found: $1" >&2
+        return
+    fi
+    local datestring=$(grep -m1 "^Date: " "$1")
+    extract_date_from_str "$datestring"
+
+    archive_mail "$1" $year $month $day "$dir"
+}
+
 dir=$PWD
 while getopts hd: opt; do
     case $opt in
@@ -104,13 +115,12 @@ fi
 # Use getopts index of last consumed option as start of the positional argument
 # list.
 for ((i=$OPTIND; i <= $#; i++)); do
-    file="${@:$i:1}"
-    if [ ! -f "$file" ]; then
-        echo "File not found: $file" >&2
-        continue
+    arg="${@:$i:1}"
+    if [ -d "$arg" ]; then
+        for file in $arg/*; do
+            process_file "$file"
+        done
+    else
+        process_file "$arg"
     fi
-    datestring=$(grep -m1 "^Date: " "$file")
-    extract_date_from_str "$datestring"
-
-    archive_mail "$file" $year $month $day "$dir"
 done
