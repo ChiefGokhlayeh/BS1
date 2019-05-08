@@ -1,3 +1,7 @@
+# CMake ignores
+_build/*
+
+# Visual Studio Code ignores
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json

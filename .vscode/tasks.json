@@ -1,0 +1,48 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "ReConfigure Release",
+            "type": "shell",
+            "command": "rm -rf _build && mkdir _build && cd _build && cmake ..",
+            "windows": {
+                "options": {
+                    "shell": {
+                        "executable": "C:\\Windows\\System32\\wsl.exe"
+                    }
+                }
+            }
+        },
+        {
+            "label": "ReConfigure Debug",
+            "type": "shell",
+            "command": "rm -rf _build && mkdir _build && cd _build && cmake -DCMAKE_BUILD_TYPE=Debug ..",
+            "windows": {
+                "options": {
+                    "shell": {
+                        "executable": "C:\\Windows\\System32\\wsl.exe"
+                    }
+                }
+            }
+        },
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": "cmake --build _build --target ${input:target}",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$gcc"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "target",
+            "type": "promptString",
+            "description": "cmake target to build (type 'all' to build all targets)"
+        }
+    ]
+}
