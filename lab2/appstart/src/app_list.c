@@ -6,28 +6,39 @@
 #include <string.h>
 #include <dirent.h>
 
-int al_init(struct al_item **apps, const char *name, struct al_item *next, struct al_item *previous)
+int al_init(struct al_item **apps, const char *dir, const char *name, struct al_item *next, struct al_item *previous)
 {
+    int dirlen = 0;
+    if (dir != NULL)
+        dirlen = strlen(dir);
+
     *apps = malloc(sizeof(struct al_item));
     if (*apps == NULL)
         return EXIT_FAILURE;
-    char *_name = malloc(strlen(name) + 1);
-    if (_name == NULL)
+    char *path = malloc(dirlen + 1 + strlen(name) + 1);
+    if (path == NULL)
         return EXIT_FAILURE;
 
-    strcpy(_name, name);
+    char *_name = path;
+    if (dir != NULL)
+    {
+        _name = path + dirlen + 1;
+        strcat(strcat(strcpy(path, dir), "/"), name);
+    }
+
+    (*apps)->path = path;
     (*apps)->name = _name;
     (*apps)->next = next;
     (*apps)->previous = previous;
     return EXIT_SUCCESS;
 }
 
-int al_search(const char *path, struct al_item **apps)
+int al_search(const char *dir_path, struct al_item **apps)
 {
     int ret = 0;
     DIR *d;
     struct dirent *dir;
-    d = opendir(path);
+    d = opendir(dir_path);
     if (d)
     {
         struct al_item **current = apps;
@@ -38,7 +49,7 @@ int al_search(const char *path, struct al_item **apps)
             {
                 continue;
             }
-            al_init(current, dir->d_name, NULL, previous);
+            al_init(current, dir_path, dir->d_name, NULL, previous);
             previous = *current;
             current = &(*current)->next;
             ret++;

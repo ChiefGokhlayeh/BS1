@@ -3,6 +3,7 @@
 
 struct al_item
 {
+    char *path;
     char *name;
     struct al_item *next;
     struct al_item *previous;
@@ -15,8 +16,12 @@ struct al_item
  * Pointer to an al_item start pointer. Will be allocated to a proper al_item on
  * successful completion.
  *
+ * @param[in] dir
+ * C-string of the base-dir where the app is located in. May be NULL for apps
+ * that shall be looked up via PATH variable.
+ *
  * @param[in] name
- * C-string name to be set. May be NULL.
+ * C-string of the app name. Must not be NULL.
  *
  * @param[in] next
  * Pointer to the next element to be set. May be NULL.
@@ -26,13 +31,13 @@ struct al_item
  *
  * @return EXIT_SUCCESS on success, an error-code otherwise.
  */
-int al_init(struct al_item **apps, const char *name, struct al_item *next, struct al_item *previous);
+int al_init(struct al_item **apps, const char *dir, const char *name, struct al_item *next, struct al_item *previous);
 
 /**
  * @brief Initialize an al_item list by scanning through the contents of a
  * directory.
  *
- * @param[in] path
+ * @param[in] dir_path
  * Path to a directory to search through.
  *
  * @param[out] apps
@@ -45,7 +50,7 @@ int al_init(struct al_item **apps, const char *name, struct al_item *next, struc
  * @retval < 0
  * On error.
  */
-int al_search(const char *path, struct al_item **apps);
+int al_search(const char *dir_path, struct al_item **apps);
 
 /**
  * @brief Follow the al_item list and return the al_item advanced by the given
