@@ -15,6 +15,8 @@
 #define STDIN_BUFFER_SIZE (1024)
 #define ITEMS_PER_PAGE (10)
 
+WINDOW *win = NULL;
+
 static struct al_item *root;
 static struct al_item *cur = NULL;
 static struct al_item *next = NULL;
@@ -78,6 +80,19 @@ static int page_at(int at)
     }
 }
 
+static int start_app(const struct al_item *app)
+{
+    pid_t f = fork();
+    if (f == 0)
+    {
+        /* execl will destroy the current process context. So it will only
+         * return if something goes wrong. */
+        return execl(app->path, app->name, NULL);
+    }
+
+    return EXIT_SUCCESS;
+}
+
 static int parse_command(const char buffer[], size_t length)
 {
     int input_page = 0;
@@ -118,7 +133,7 @@ static int parse_command(const char buffer[], size_t length)
 
 int main(void)
 {
-    initscr();
+    win = initscr();
     atexit(quit);
 
     char buffer[STDIN_BUFFER_SIZE];
@@ -142,7 +157,14 @@ int main(void)
             if (1 == sscanf(buffer, "%u", &selection) && selection <= ITEMS_PER_PAGE)
             {
                 struct al_item *selItem = al_at(cur, selection - 1);
-                printw("%u -- %s", selection, selItem->name);
+                printw("Starting [%u] -- %s... ", selection, selItem->name);
+                if (EXIT_SUCCESS == start_app(selItem))
+                {
+                    clrtoeol();
+                    printw("done!\n");
+                    wait(NULL);
+                    clear();
+                }
             }
             else
             {
