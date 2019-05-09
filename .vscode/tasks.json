@@ -7,6 +7,7 @@
             "label": "ReConfigure Release",
             "type": "shell",
             "command": "rm -rf _build && mkdir _build && cd _build && cmake ..",
+            "problemMatcher": [],
             "windows": {
                 "options": {
                     "shell": {
@@ -19,6 +20,7 @@
             "label": "ReConfigure Debug",
             "type": "shell",
             "command": "rm -rf _build && mkdir _build && cd _build && cmake -DCMAKE_BUILD_TYPE=Debug ..",
+            "problemMatcher": [],
             "windows": {
                 "options": {
                     "shell": {
@@ -35,7 +37,14 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": "$gcc"
+            "problemMatcher": "$gcc",
+            "windows": {
+                "options": {
+                    "shell": {
+                        "executable": "C:\\Windows\\System32\\wsl.exe"
+                    }
+                }
+            }
         }
     ],
     "inputs": [
