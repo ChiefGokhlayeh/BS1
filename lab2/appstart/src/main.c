@@ -275,7 +275,7 @@ int main(void)
 
     int count = al_search("/usr/bin", &root);
     cur = root;
-    max_pages = count / DEFAULT_ITEMS_PER_PAGE;
+    max_pages = count / DEFAULT_ITEMS_PER_PAGE + (count % DEFAULT_ITEMS_PER_PAGE == 0 ? 0 : 1);
 
     while (1)
     {
@@ -288,7 +288,7 @@ int main(void)
 
         wattron(main_win, COLOR_PAIR(4));
         wprintw(main_win, "> ");
-        wclrtoeol(main_win);
+        wclrtobot(main_win);
 
         wrefresh(main_win);
         int err = wgetnstr(main_win, buffer, STDIN_BUFFER_SIZE);
@@ -319,7 +319,6 @@ int main(void)
             wattroff(main_win, COLOR_PAIR(4));
             status("Error while reading input!\n", 0);
         }
-        wclrtobot(main_win);
     }
 
     return EXIT_SUCCESS;
