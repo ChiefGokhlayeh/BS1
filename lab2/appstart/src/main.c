@@ -57,12 +57,12 @@ static void status(const char *fmt, int options, ...)
     {
         clear_status();
     }
-    wattron(status_win, COLOR_PAIR(3));
+    wattron(status_win, COLOR_PAIR(5));
     va_list args;
     va_start(args, options);
     vw_printw(status_win, fmt, args);
     va_end(args);
-    wattroff(status_win, COLOR_PAIR(3));
+    wattroff(status_win, COLOR_PAIR(5));
     wrefresh(status_win);
 }
 
