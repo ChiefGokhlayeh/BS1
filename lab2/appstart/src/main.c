@@ -47,8 +47,8 @@ static void quit()
 
 static int clear_status(void)
 {
-    wmove(status_win, 0, 0);
     wclear(status_win);
+    wmove(status_win, 0, 0);
 }
 
 static void status(const char *fmt, int options, ...)
@@ -210,14 +210,15 @@ static int parse_command(const char buffer[], size_t length)
             exit(0);
             return EXIT_SUCCESS;
         case 'c':
-            if (1 <= (parsed = sscanf(buffer + i + 1, "%d %d", &index, &pid) && index > 0))
+            if (1 <= (parsed = sscanf(buffer + i + 1, "%d %d", &index, &pid)) && index > 0 && index <= DEFAULT_ITEMS_PER_PAGE)
             {
                 struct al_item *sel_item = al_at(cur, index - 1);
                 if (parsed >= 2)
                 {
                     if (pid > 1 && close_instance(sel_item, pid) == EXIT_SUCCESS)
                     {
-                        status("[%u] %s closed!\n", 0, index, sel_item->name);
+                        status("[%u] %s (%d) closed!\n", 0, index, sel_item->name, pid);
+                        return EXIT_SUCCESS;
                     }
                     else
                     {
@@ -228,6 +229,8 @@ static int parse_command(const char buffer[], size_t length)
                 else
                 {
                     close_instances(sel_item);
+                    status("[%u] %s closed!\n", 0, index, sel_item->name);
+                    return EXIT_SUCCESS;
                 }
             }
             else
@@ -235,7 +238,6 @@ static int parse_command(const char buffer[], size_t length)
                 status("Invalid item!\n", 0);
                 return EXIT_FAILURE;
             }
-            return EXIT_SUCCESS;
         case ' ':
         case '\t':
         case '\n':
