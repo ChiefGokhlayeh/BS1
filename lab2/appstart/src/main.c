@@ -137,6 +137,18 @@ int main(void)
     win = initscr();
     atexit(quit);
 
+    if (has_colors())
+    {
+        start_color();
+        init_pair(1, COLOR_RED, COLOR_BLACK);
+        init_pair(2, COLOR_GREEN, COLOR_BLACK);
+        init_pair(3, COLOR_YELLOW, COLOR_BLACK);
+        init_pair(4, COLOR_BLUE, COLOR_BLACK);
+        init_pair(5, COLOR_CYAN, COLOR_BLACK);
+        init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
+        init_pair(7, COLOR_WHITE, COLOR_BLACK);
+    }
+
     char buffer[STDIN_BUFFER_SIZE];
 
     int count = al_search("/usr/bin", &root);
@@ -148,18 +160,23 @@ int main(void)
         refresh();
         int displayed = 0;
         next = al_display_page(cur, ITEMS_PER_PAGE, &displayed, print_item);
+        attron(COLOR_PAIR(3));
         printw("Page: %d/%d\n", page + 1, max_pages);
         printw("Commands: [item number], (n)ext page, (p)revious page, #[page number], (q)uit\n");
+        attroff(COLOR_PAIR(3));
+
+        attron(COLOR_PAIR(4));
+        addstr("> ");
         clrtoeol();
-        printw("> ");
         if (ERR != getnstr(buffer, STDIN_BUFFER_SIZE))
         {
+            attroff(COLOR_PAIR(4));
             unsigned int selection = 0;
             if (1 == sscanf(buffer, "%u", &selection) && selection <= ITEMS_PER_PAGE)
             {
-                struct al_item *selItem = al_at(cur, selection - 1);
-                printw("Starting: [%u] %s ... ", selection, selItem->name);
-                if (EXIT_SUCCESS == start_instance(selItem))
+                struct al_item *sel_item = al_at(cur, selection - 1);
+                status("Starting: [%u] %s ... ", selection, sel_item->name);
+                if (EXIT_SUCCESS == start_instance(sel_item))
                 {
                     printw("done!\n");
                 }
@@ -171,6 +188,7 @@ int main(void)
         }
         else
         {
+            attroff(COLOR_PAIR(4));
             printw("Error while reading input!\n");
         }
         clrtobot();
