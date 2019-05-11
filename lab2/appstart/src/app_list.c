@@ -112,12 +112,28 @@ err:
 
 void al_close_instance(struct al_instance *instance)
 {
-    if (instance->previous != NULL)
-        instance->previous->next = instance->next;
-
     kill(instance->pid, SIGTERM);
-
     waitpid(instance->pid, NULL, 0);
+
+    if (instance->next != NULL)
+    {
+        instance->next->previous = instance->previous;
+    }
+    if (instance->previous != NULL)
+    {
+        instance->previous->next = instance->next;
+    }
+    else
+    {
+        if (instance == instance->app->instances)
+        {
+            instance->app->instances = instance->next;
+        }
+    }
+
+    instance->next = NULL;
+    instance->previous = NULL;
+
     if (instance->stdout > -1)
     {
         close(instance->stdout);
@@ -128,19 +144,19 @@ void al_close_instance(struct al_instance *instance)
         close(instance->stderr);
         instance->stderr = -1;
     }
+
     free(instance);
 }
 
 void al_close_instances(struct al_item *app)
 {
-    struct al_instance **cur = &app->instances;
-    struct al_instance **prev = NULL;
-    while (*cur != NULL)
+    struct al_instance *cur = app->instances;
+    struct al_instance *next = NULL;
+    while (cur != NULL)
     {
-        al_close_instance(*cur);
-        prev = cur;
-        cur = &(*cur)->next;
-        *prev = NULL;
+        next = cur->next;
+        al_close_instance(cur);
+        cur = next;
     }
 }
 
