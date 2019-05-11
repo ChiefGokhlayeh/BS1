@@ -1,16 +1,32 @@
 #ifndef APP_LIST_H_
 #define APP_LIST_H_
 
+#include <unistd.h>
+
+struct al_instance
+{
+    pid_t pid;
+    int stdout;
+    int stderr;
+
+    struct al_item *app;
+    struct al_instance *next;
+    struct al_instance *previous;
+};
+
 struct al_item
 {
     char *path;
     char *name;
+
+    struct al_instance *instances;
+
     struct al_item *next;
     struct al_item *previous;
 };
 
 /**
- * @brief Initialize an al_item with the given next and previous pointer.
+ * @brief Create an al_item with the given next and previous pointer.
  *
  * @param[out] apps
  * Pointer to an al_item start pointer. Will be allocated to a proper al_item on
@@ -31,10 +47,32 @@ struct al_item
  *
  * @return EXIT_SUCCESS on success, an error-code otherwise.
  */
-int al_init(struct al_item **apps, const char *dir, const char *name, struct al_item *next, struct al_item *previous);
+int al_create(struct al_item **apps, const char *dir, const char *name, struct al_item *next, struct al_item *previous);
 
 /**
- * @brief Initialize an al_item list by scanning through the contents of a
+ * @brief Create a new app instance using the given al_item app context.
+ * The new instance will be appended to the al_item instances list.
+ *
+ * @param[in] app
+ * Context of which to create a new instance from.
+ *
+ * @return Pointer to the newly created instance or NULL on error.
+ */
+struct al_instance *al_create_instance(struct al_item *app);
+
+/**
+ * @brief Close a instance, free all associated resources and remove it from the
+ * instances list.
+ */
+void al_close_instance(struct al_instance *instance);
+
+/**
+ * @brief Close all instances associated with the given app context.
+ */
+void al_close_instances(struct al_item *app);
+
+/**
+ * @brief Create an al_item list by scanning through the contents of a
  * directory.
  *
  * @param[in] dir_path

@@ -80,17 +80,18 @@ static int page_at(int at)
     }
 }
 
-static int start_app(const struct al_item *app)
+static int start_app(struct al_item *app)
 {
-    pid_t f = fork();
-    if (f == 0)
+    struct al_instance *instance = al_create_instance(app);
+    if (instance != NULL)
     {
-        /* execl will destroy the current process context. So it will only
-         * return if something goes wrong. */
-        return execl(app->path, app->name, NULL);
+        printw("pid: %d, stdout: %d, stderr: %d ", instance->pid, instance->stdout, instance->stderr);
+        return EXIT_SUCCESS;
     }
-
-    return EXIT_SUCCESS;
+    else
+    {
+        return EXIT_FAILURE;
+    }
 }
 
 static int parse_command(const char buffer[], size_t length)
@@ -157,13 +158,10 @@ int main(void)
             if (1 == sscanf(buffer, "%u", &selection) && selection <= ITEMS_PER_PAGE)
             {
                 struct al_item *selItem = al_at(cur, selection - 1);
-                printw("Starting [%u] -- %s... ", selection, selItem->name);
-                if (EXIT_SUCCESS == start_app(selItem))
+                printw("Starting: [%u] %s ... ", selection, selItem->name);
+                if (EXIT_SUCCESS == start_instance(selItem))
                 {
-                    clrtoeol();
                     printw("done!\n");
-                    wait(NULL);
-                    clear();
                 }
             }
             else

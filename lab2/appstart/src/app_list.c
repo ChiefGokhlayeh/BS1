@@ -6,7 +6,10 @@
 #include <string.h>
 #include <dirent.h>
 
-int al_init(struct al_item **apps, const char *dir, const char *name, struct al_item *next, struct al_item *previous)
+#include <sys/wait.h>
+#include <signal.h>
+
+int al_create(struct al_item **apps, const char *dir, const char *name, struct al_item *next, struct al_item *previous)
 {
     int dirlen = 0;
     if (dir != NULL)
@@ -28,9 +31,117 @@ int al_init(struct al_item **apps, const char *dir, const char *name, struct al_
 
     (*apps)->path = path;
     (*apps)->name = _name;
+    (*apps)->instances = NULL;
     (*apps)->next = next;
     (*apps)->previous = previous;
     return EXIT_SUCCESS;
+}
+
+struct al_instance *al_create_instance(struct al_item *app)
+{
+    int stdout_link[2] = {-1, -1};
+    int stderr_link[2] = {-1, -1};
+
+    struct al_instance *prev = NULL;
+    struct al_instance **cur = &app->instances;
+    while (*cur != NULL)
+    {
+        prev = *cur;
+        cur = &(*cur)->next;
+    }
+
+    *cur = malloc(sizeof(struct al_instance));
+    if (*cur == NULL)
+        goto err;
+    (*cur)->app = app;
+    (*cur)->next = NULL;
+    (*cur)->previous = prev;
+
+    if (pipe(stdout_link) != 0)
+        goto err;
+
+    if (pipe(stderr_link) != 0)
+        goto err;
+
+    (*cur)->pid = fork();
+    if ((*cur)->pid == 0)
+    {
+        dup2(stdout_link[1], STDOUT_FILENO);
+        close(stdout_link[0]);
+        close(stdout_link[1]);
+        dup2(stderr_link[1], STDERR_FILENO);
+        close(stderr_link[0]);
+        close(stderr_link[1]);
+
+        /* execl will destroy the current process context. So it will only
+         * return if something goes wrong. */
+        execl(app->path, app->name, NULL);
+        return NULL;
+    }
+    else if ((*cur)->pid > 0)
+    {
+        close(stdout_link[1]);
+        (*cur)->stdout = stdout_link[0];
+        close(stderr_link[1]);
+        (*cur)->stderr = stderr_link[0];
+
+        return *cur;
+    }
+    else
+    {
+        goto err;
+    }
+
+err:
+    if (*cur != NULL)
+    {
+        free(*cur);
+        *cur = NULL;
+    }
+
+    if (stdout_link[0] > -1)
+        close(stdout_link[0]);
+    if (stdout_link[1] > -1)
+        close(stdout_link[1]);
+    if (stderr_link[0] > -1)
+        close(stderr_link[0]);
+    if (stderr_link[1] > -1)
+        close(stderr_link[1]);
+    return NULL;
+}
+
+void al_close_instance(struct al_instance *instance)
+{
+    if (instance->previous != NULL)
+        instance->previous->next = instance->next;
+
+    kill(instance->pid, SIGTERM);
+
+    waitpid(instance->pid, NULL, 0);
+    if (instance->stdout > -1)
+    {
+        close(instance->stdout);
+        instance->stdout = -1;
+    }
+    if (instance->stderr > -1)
+    {
+        close(instance->stderr);
+        instance->stderr = -1;
+    }
+    free(instance);
+}
+
+void al_close_instances(struct al_item *app)
+{
+    struct al_instance **cur = &app->instances;
+    struct al_instance **prev = NULL;
+    while (*cur != NULL)
+    {
+        al_close_instance(*cur);
+        prev = cur;
+        cur = &(*cur)->next;
+        *prev = NULL;
+    }
 }
 
 int al_search(const char *dir_path, struct al_item **apps)
@@ -49,7 +160,7 @@ int al_search(const char *dir_path, struct al_item **apps)
             {
                 continue;
             }
-            al_init(current, dir_path, dir->d_name, NULL, previous);
+            al_create(current, dir_path, dir->d_name, NULL, previous);
             previous = *current;
             current = &(*current)->next;
             ret++;
