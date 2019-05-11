@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdarg.h>
+#include <string.h>
 
 #include <sys/signal.h>
 #include <sys/wait.h>
@@ -13,9 +15,12 @@
 #include <ncurses.h>
 
 #define STDIN_BUFFER_SIZE (1024)
-#define ITEMS_PER_PAGE (10)
+#define DEFAULT_ITEMS_PER_PAGE (10)
+#define STATUS_OPTION_APPEND (1 << 0)
 
-WINDOW *win = NULL;
+WINDOW *init_win = NULL;
+WINDOW *main_win = NULL;
+WINDOW *status_win = NULL;
 
 static struct al_item *root;
 static struct al_item *cur = NULL;
@@ -25,12 +30,67 @@ static int max_pages = 0;
 
 static void quit()
 {
+    if (status_win != NULL)
+    {
+        delwin(status_win);
+        status_win = NULL;
+    }
+
+    if (main_win != NULL)
+    {
+        delwin(main_win);
+        main_win = NULL;
+    }
+
     endwin();
+}
+
+static int clear_status(void)
+{
+    wmove(status_win, 0, 0);
+    wclear(status_win);
+}
+
+static void status(const char *fmt, int options, ...)
+{
+    if (!(options & STATUS_OPTION_APPEND))
+    {
+        clear_status();
+    }
+    wattron(status_win, COLOR_PAIR(3));
+    va_list args;
+    va_start(args, options);
+    vw_printw(status_win, fmt, args);
+    va_end(args);
+    wattroff(status_win, COLOR_PAIR(3));
+    wrefresh(status_win);
 }
 
 static void print_item(struct al_item *item, int index)
 {
-    mvprintw(index, 0, "[%02d] %s\n", index + 1, item->name);
+    int dpos = 0;
+    int x = 0;
+    wattron(main_win, COLOR_PAIR(1));
+    mvwprintw(main_win, index, x, "[%02d] %n", index + 1, &dpos);
+    x += dpos;
+    wattroff(main_win, COLOR_PAIR(1));
+    mvwprintw(main_win, index, x, "%s %n", item->name, &dpos);
+    x += dpos;
+
+    wattron(main_win, COLOR_PAIR(2));
+    struct al_instance *cur = item->instances;
+    while (cur != NULL)
+    {
+        mvwprintw(main_win, index, x, "(%d)%n", cur->pid, &dpos);
+        x += dpos;
+        if ((cur = cur->next) != NULL)
+        {
+            mvwprintw(main_win, index, x, ", %n", &dpos);
+            x += dpos;
+        }
+    }
+    wattroff(main_win, COLOR_PAIR(2));
+    mvwprintw(main_win, index, x, "\n");
 }
 
 static int next_page(void)
@@ -43,14 +103,14 @@ static int next_page(void)
     }
     else
     {
-        printw("No next page.\n");
+        status("No next page.\n", 0);
         return EXIT_FAILURE;
     }
 }
 
 static int previous_page(void)
 {
-    struct al_item *tmp = al_skip_pages(cur, -1, ITEMS_PER_PAGE);
+    struct al_item *tmp = al_skip_pages(cur, -1, DEFAULT_ITEMS_PER_PAGE);
     if (tmp != NULL)
     {
         cur = tmp;
@@ -59,14 +119,14 @@ static int previous_page(void)
     }
     else
     {
-        printw("No previous page.\n");
+        status("No previous page.\n", 0);
         return EXIT_FAILURE;
     }
 }
 
 static int page_at(int at)
 {
-    struct al_item *tmp = al_skip_pages(root, at, ITEMS_PER_PAGE);
+    struct al_item *tmp = al_skip_pages(root, at, DEFAULT_ITEMS_PER_PAGE);
     if (tmp != NULL)
     {
         cur = tmp;
@@ -75,7 +135,7 @@ static int page_at(int at)
     }
     else
     {
-        printw("Page does not exist.\n");
+        status("Page does not exist.\n", 0);
         return EXIT_FAILURE;
     }
 }
@@ -112,7 +172,7 @@ static int start_instance(struct al_item *app)
     struct al_instance *instance = al_create_instance(app);
     if (instance != NULL)
     {
-        printw("pid: %d, stdout: %d, stderr: %d ", instance->pid, instance->stdout, instance->stderr);
+        status("pid: %d, stdout: %d, stderr: %d ", STATUS_OPTION_APPEND, instance->pid, instance->stdout, instance->stderr);
         return EXIT_SUCCESS;
     }
     else
@@ -142,7 +202,7 @@ static int parse_command(const char buffer[], size_t length)
             }
             else
             {
-                printw("Invalid page index!\n");
+                status("Invalid page index!\n", 0);
                 return EXIT_FAILURE;
             }
         case 'q':
@@ -157,11 +217,11 @@ static int parse_command(const char buffer[], size_t length)
                 {
                     if (pid > 1 && close_instance(sel_item, pid) == EXIT_SUCCESS)
                     {
-                        printw("[%u] %s closed!\n", index, sel_item->name);
+                        status("[%u] %s closed!\n", 0, index, sel_item->name);
                     }
                     else
                     {
-                        printw("Invalid pid!\n");
+                        status("Invalid pid!\n", 0);
                         return EXIT_FAILURE;
                     }
                 }
@@ -172,7 +232,7 @@ static int parse_command(const char buffer[], size_t length)
             }
             else
             {
-                printw("Invalid item!\n");
+                status("Invalid item!\n", 0);
                 return EXIT_FAILURE;
             }
             return EXIT_SUCCESS;
@@ -181,17 +241,17 @@ static int parse_command(const char buffer[], size_t length)
         case '\n':
             continue;
         default:
-            printw("Invalid command!\n");
+            status("Invalid command!\n", 0);
             return EXIT_FAILURE;
         }
     }
-    printw("No command provided!\n");
+    status("No command provided!\n", 0);
     return EXIT_FAILURE;
 }
 
 int main(void)
 {
-    win = initscr();
+    init_win = initscr();
     atexit(quit);
 
     if (has_colors())
@@ -206,36 +266,41 @@ int main(void)
         init_pair(7, COLOR_WHITE, COLOR_BLACK);
     }
 
+    main_win = newwin(13, COLS, 0, 0);
+    status_win = newwin(1, COLS, getmaxy(init_win) - 1, 0);
+
     char buffer[STDIN_BUFFER_SIZE];
 
     int count = al_search("/usr/bin", &root);
     cur = root;
-    max_pages = count / ITEMS_PER_PAGE;
+    max_pages = count / DEFAULT_ITEMS_PER_PAGE;
 
     while (1)
     {
-        refresh();
         int displayed = 0;
-        next = al_display_page(cur, ITEMS_PER_PAGE, &displayed, print_item);
-        attron(COLOR_PAIR(3));
-        printw("Page: %d/%d\n", page + 1, max_pages);
-        printw("Commands: [item num], (n)ext page, (p)rev page, #[page num], c[item num] [pid], (q)uit\n");
-        attroff(COLOR_PAIR(3));
+        next = al_display_page(cur, DEFAULT_ITEMS_PER_PAGE, &displayed, print_item);
+        wattron(main_win, COLOR_PAIR(3));
+        wprintw(main_win, "Page: %d/%d\n", page + 1, max_pages);
+        wprintw(main_win, "Commands: [item num], (n)ext page, (p)rev page, #[page num], c[item num] [pid], (q)uit\n");
+        wattroff(main_win, COLOR_PAIR(3));
 
-        attron(COLOR_PAIR(4));
-        addstr("> ");
-        clrtoeol();
-        if (ERR != getnstr(buffer, STDIN_BUFFER_SIZE))
+        wattron(main_win, COLOR_PAIR(4));
+        wprintw(main_win, "> ");
+        wclrtoeol(main_win);
+
+        wrefresh(main_win);
+        int err = wgetnstr(main_win, buffer, STDIN_BUFFER_SIZE);
+        if (OK == err)
         {
-            attroff(COLOR_PAIR(4));
+            wattroff(main_win, COLOR_PAIR(4));
             unsigned int selection = 0;
-            if (1 == sscanf(buffer, "%u", &selection) && selection <= ITEMS_PER_PAGE)
+            if (1 == sscanf(buffer, "%u", &selection) && selection <= DEFAULT_ITEMS_PER_PAGE)
             {
                 struct al_item *sel_item = al_at(cur, selection - 1);
-                status("Starting: [%u] %s ... ", selection, sel_item->name);
+                status("Starting: [%u] %s ... ", 0, selection, sel_item->name);
                 if (EXIT_SUCCESS == start_instance(sel_item))
                 {
-                    printw("done!\n");
+                    status("done!\n", STATUS_OPTION_APPEND);
                 }
             }
             else
@@ -243,12 +308,16 @@ int main(void)
                 parse_command(buffer, STDIN_BUFFER_SIZE);
             }
         }
+        else if (KEY_RESIZE)
+        {
+            mvwin(status_win, getmaxy(init_win) - 1, 0);
+        }
         else
         {
-            attroff(COLOR_PAIR(4));
-            printw("Error while reading input!\n");
+            wattroff(main_win, COLOR_PAIR(4));
+            status("Error while reading input!\n", 0);
         }
-        clrtobot();
+        wclrtobot(main_win);
     }
 
     return EXIT_SUCCESS;
