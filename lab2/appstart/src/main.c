@@ -80,7 +80,34 @@ static int page_at(int at)
     }
 }
 
-static int start_app(struct al_item *app)
+static int close_instances(struct al_item *app)
+{
+    al_close_instances(app);
+    return EXIT_SUCCESS;
+}
+
+static int close_instance(struct al_item *app, pid_t pid)
+{
+    struct al_instance *cur = app->instances;
+    struct al_instance *found = NULL;
+    while (cur != NULL)
+    {
+        if (cur->pid == pid)
+            found = cur;
+        cur = cur->next;
+    }
+    if (found != NULL)
+    {
+        al_close_instance(found);
+        return EXIT_SUCCESS;
+    }
+    else
+    {
+        return EXIT_FAILURE;
+    }
+}
+
+static int start_instance(struct al_item *app)
 {
     struct al_instance *instance = al_create_instance(app);
     if (instance != NULL)
@@ -97,6 +124,9 @@ static int start_app(struct al_item *app)
 static int parse_command(const char buffer[], size_t length)
 {
     int input_page = 0;
+    int index = 0;
+    int pid = 0;
+    int parsed = 0;
     for (size_t i = 0; i < length; i++)
     {
         switch (buffer[i])
@@ -118,6 +148,33 @@ static int parse_command(const char buffer[], size_t length)
         case 'q':
             quit();
             exit(0);
+            return EXIT_SUCCESS;
+        case 'c':
+            if (1 <= (parsed = sscanf(buffer + i + 1, "%d %d", &index, &pid) && index > 0))
+            {
+                struct al_item *sel_item = al_at(cur, index - 1);
+                if (parsed >= 2)
+                {
+                    if (pid > 1 && close_instance(sel_item, pid) == EXIT_SUCCESS)
+                    {
+                        printw("[%u] %s closed!\n", index, sel_item->name);
+                    }
+                    else
+                    {
+                        printw("Invalid pid!\n");
+                        return EXIT_FAILURE;
+                    }
+                }
+                else
+                {
+                    close_instances(sel_item);
+                }
+            }
+            else
+            {
+                printw("Invalid item!\n");
+                return EXIT_FAILURE;
+            }
             return EXIT_SUCCESS;
         case ' ':
         case '\t':
@@ -162,7 +219,7 @@ int main(void)
         next = al_display_page(cur, ITEMS_PER_PAGE, &displayed, print_item);
         attron(COLOR_PAIR(3));
         printw("Page: %d/%d\n", page + 1, max_pages);
-        printw("Commands: [item number], (n)ext page, (p)revious page, #[page number], (q)uit\n");
+        printw("Commands: [item num], (n)ext page, (p)rev page, #[page num], c[item num] [pid], (q)uit\n");
         attroff(COLOR_PAIR(3));
 
         attron(COLOR_PAIR(4));
