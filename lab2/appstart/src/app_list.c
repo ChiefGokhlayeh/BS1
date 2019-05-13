@@ -76,7 +76,7 @@ struct al_instance *al_create_instance(struct al_item *app)
         /* execl will destroy the current process context. So it will only
          * return if something goes wrong. */
         execl(app->path, app->name, NULL);
-        return NULL;
+        goto err;
     }
     else if ((*cur)->pid > 0)
     {
