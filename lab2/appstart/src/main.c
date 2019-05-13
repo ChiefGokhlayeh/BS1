@@ -18,6 +18,17 @@
 #define DEFAULT_ITEMS_PER_PAGE (10)
 #define STATUS_OPTION_APPEND (1 << 0)
 
+static void quit();
+static int clear_status(void);
+static void print_item(struct al_item *item, int index);
+static int next_page(void);
+static int previous_page(void);
+static int page_at(int at);
+static int close_instances(struct al_item *app);
+static int close_instance(struct al_item *app, pid_t pid);
+static int start_instance(struct al_item *app);
+static int parse_command(const char buffer[], size_t length);
+
 WINDOW *init_win = NULL;
 WINDOW *main_win = NULL;
 WINDOW *status_win = NULL;
@@ -30,6 +41,13 @@ static int max_pages = 0;
 
 static void quit()
 {
+    struct al_item *cur = root;
+    while (cur != NULL)
+    {
+        al_dispose(cur);
+        cur = cur->next;
+    }
+
     if (status_win != NULL)
     {
         delwin(status_win);

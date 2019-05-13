@@ -37,6 +37,18 @@ int al_create(struct al_item **apps, const char *dir, const char *name, struct a
     return EXIT_SUCCESS;
 }
 
+void al_dispose(struct al_item *app)
+{
+    al_close_instances(app);
+
+    if (app->next != NULL)
+        app->next->previous = app->previous;
+    if (app->previous != NULL)
+        app->previous->next = app->next;
+
+    free(app);
+}
+
 struct al_instance *al_create_instance(struct al_item *app)
 {
     int stdout_link[2] = {-1, -1};

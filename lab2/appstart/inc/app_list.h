@@ -50,6 +50,15 @@ struct al_item
 int al_create(struct al_item **apps, const char *dir, const char *name, struct al_item *next, struct al_item *previous);
 
 /**
+ * @brief Dispose of app in app list by closing all associated instances and
+ * freeing allocated resources.
+ *
+ * @param[in] app
+ * Item to dispose.
+ */
+void al_dispose(struct al_item *app);
+
+/**
  * @brief Create a new app instance using the given al_item app context.
  * The new instance will be appended to the al_item instances list.
  *
