@@ -1,6 +1,13 @@
 # CMake ignores
 _build/*
 
+# Executables
+bench_mmap
+bench_pipe
+bench_process_vm_readv
+bench_rdtsc
+bench_signal
+
 # Visual Studio Code ignores
 .vscode/*
 !.vscode/settings.json
