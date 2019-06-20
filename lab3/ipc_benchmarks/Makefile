@@ -9,13 +9,13 @@
 #
 
 # Please add bench_pipes.c yourself...
-SOURCES=bench_rdtsc.c bench_signal.c bench_mmap.c  # bench_pipes.c
+SOURCES=bench_rdtsc.c bench_signal.c bench_mmap.c bench_pipes.c
 ifeq ($(OS),Linux)
     SOURCES+=bench_process_vm_readv.c
 endif
 
 BENCHMARKS=$(SOURCES:.c=)
-PLOTABLE=bench_mmap
+PLOTABLE=bench_mmap bench_pipes
 ifeq ($(OS),Linux)
     PLOTABLE+=bench_process_vm_readv
 endif

@@ -4,7 +4,7 @@ build/*
 
 # Executables
 bench_mmap
-bench_pipe
+bench_pipes
 bench_process_vm_readv
 bench_rdtsc
 bench_signal
