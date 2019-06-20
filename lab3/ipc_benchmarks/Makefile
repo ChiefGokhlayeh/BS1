@@ -8,13 +8,17 @@
 # Author: Rainer Keller, HS-Esslingen
 #
 
-# Please add bench_pipes.c yourselve...
+# Please add bench_pipes.c yourself...
 SOURCES=bench_rdtsc.c bench_signal.c bench_mmap.c  # bench_pipes.c
 ifeq ($(OS),Linux)
     SOURCES+=bench_process_vm_readv.c
 endif
 
 BENCHMARKS=$(SOURCES:.c=)
+PLOTABLE=bench_mmap
+ifeq ($(OS),Linux)
+    PLOTABLE+=bench_process_vm_readv
+endif
 
 CC=gcc
 CFLAGS=-Wall -O2
@@ -26,3 +30,16 @@ clean:
 
 .c.o:
 	$(CC) $(CFLAGS) -o $@ $<
+
+plot: $(PLOTABLE)
+	./$< \
+		| tail -n +2 \
+		| cut -f16,14 -d' ' \
+		| sed "s/(//g" \
+		| gnuplot -p -e "set logscale x 2;\
+			set grid;\
+			set xlabel 'Transfer Size (in Bytes)';\
+			set ylabel 'Speed (in MB/s)';\
+			plot '<cat' with linespoints title '$<'"
+
+.PHONY: all clean plot
