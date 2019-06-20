@@ -72,9 +72,15 @@ int main(int argc, char *argv[])
         ERROR("malloc", ENOMEM);
     memset(ticks, 0, MEASUREMENTS * sizeof(int));
 
+    int page_size = getpagesize();
+    char *copy_buffer = malloc(page_size);
+    if (NULL == copy_buffer)
+        ERROR("malloc", ENOMEM);
+
     /* PARENT: measure the writing into the buffer */
     for (i = 0; i < sizes_num; i++)
     {
+        memset(copy_buffer, (rand() % ('z' - 'a')) + 'a', page_size);
         int current_size = sizes[i];
         int j;
         int min_ticks;
@@ -92,8 +98,18 @@ int main(int argc, char *argv[])
             unsigned long long start;
             unsigned long long stop;
             start = getrdtsc();
-#ifdef USE_MEMSET
+#if defined(USE_MEMSET)
             memset(anon, 'a', current_size);
+#elif defined(USE_COPY_BUFFER)
+            {
+                int k = 0;
+                while (k < current_size)
+                {
+                    int bytes_to_copy = current_size > page_size ? page_size : current_size;
+                    memcpy(anon + k, copy_buffer, bytes_to_copy);
+                    k += bytes_to_copy;
+                }
+            }
 #else
             {
                 int k;
