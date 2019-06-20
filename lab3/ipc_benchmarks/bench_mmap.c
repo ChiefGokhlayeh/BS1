@@ -21,6 +21,7 @@
 #define SLEEP_TIME 1
 
 // #define USE_MEMSET
+// #define USE_COPY_BUFFER
 
 int main(int argc, char *argv[])
 {
