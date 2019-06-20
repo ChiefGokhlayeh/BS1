@@ -1,5 +1,6 @@
 # CMake ignores
 _build/*
+build/*
 
 # Executables
 bench_mmap
