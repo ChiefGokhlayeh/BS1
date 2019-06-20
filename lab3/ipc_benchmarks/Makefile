@@ -15,15 +15,15 @@ ifeq ($(OS),Linux)
 endif
 
 BENCHMARKS=$(SOURCES:.c=)
-PLOTABLE=bench_mmap bench_pipes
+PLOTABLE=plot_mmap plot_pipes
 ifeq ($(OS),Linux)
-    PLOTABLE+=bench_process_vm_readv
+    PLOTABLE+=plot_process_vm_readv
 endif
 
 CC=gcc
 CFLAGS=-Wall -O2
 
-all: $(BENCHMARKS)
+all: $(BENCHMARKS) $(PLOTABLE)
 
 clean:
 	rm -f $(BENCHMARKS)
@@ -32,17 +32,16 @@ clean:
 	$(CC) $(CFLAGS) -o $@ $<
 
 plot: $(PLOTABLE)
-	for f in $^;\
-	do \
-		./$$f \
-			| tail -n +2 \
-			| cut -f16,14 -d' ' \
-			| sed "s/(//g" \
-			| gnuplot -p -e "set logscale x 2;\
-				set grid;\
-				set xlabel 'Transfer Size (in Bytes)';\
-				set ylabel 'Speed (in MB/s)';\
-				plot '<cat' with linespoints title '$$f'"; \
-	done
 
-.PHONY: all clean plot
+$(PLOTABLE): $(BENCHMARKS)
+	./$(@:plot_%=bench_%) \
+		| tail -n +2 \
+		| cut -f16,14 -d' ' \
+		| sed "s/(//g" \
+		| gnuplot -p -e "set logscale x 2; \
+			set grid; \
+			set xlabel 'Transfer Size (in Bytes)'; \
+			set ylabel 'Speed (in MB/s)'; \
+			plot '<cat' with linespoints title '${@:plot_%=%}' noenhanced";
+
+.PHONY: all clean plot $(PLOTABLE)
