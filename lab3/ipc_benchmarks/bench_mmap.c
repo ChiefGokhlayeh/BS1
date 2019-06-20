@@ -72,7 +72,12 @@ int main(int argc, char *argv[])
         ERROR("malloc", ENOMEM);
     memset(ticks, 0, MEASUREMENTS * sizeof(int));
 
-    int page_size = getpagesize();
+    int page_size = 0;
+    if (1 < argc)
+        page_size = strtol(argv[1], NULL, 10);
+    else
+        page_size = getpagesize();
+
     char *copy_buffer = malloc(page_size);
     if (NULL == copy_buffer)
         ERROR("malloc", ENOMEM);
