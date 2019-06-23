@@ -35,6 +35,7 @@ plot: $(PLOTABLE)
 
 $(PLOTABLE): $(BENCHMARKS)
 	./$(@:plot_%=bench_%) \
+		| tee /dev/tty \
 		| tail -n +2 \
 		| cut -f16,14 -d' ' \
 		| sed "s/(//g" \
