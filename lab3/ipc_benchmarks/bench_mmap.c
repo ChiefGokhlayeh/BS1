@@ -15,6 +15,8 @@
 #include <string.h>
 #include <limits.h>
 #include <sys/time.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 #include "bench_utils.h"
 
@@ -62,7 +64,7 @@ int main(int argc, char *argv[])
         memset(buffer, 0, MAX_SIZE);
         pid_child = getpid();
         memcpy(anon, buffer, MAX_SIZE);
-        sleep(SLEEP_TIME);
+		pause();
         printf("PID %d (CHILD): COPY DONE\n", pid_child);
         return (EXIT_SUCCESS);
     }
@@ -149,6 +151,10 @@ int main(int argc, char *argv[])
                (double)ticks_all / (MEASUREMENTS - 2.0), MEASUREMENTS, current_size,
                ((double)current_size * MEASUREMENTS) / (1024.0 * 1024.0 * time_delta_sec));
     }
+
+	kill(pid_child, SIGTERM);
+	wait(NULL);;
+	munmap(anon, MAX_SIZE);
 
     return (EXIT_SUCCESS);
 }

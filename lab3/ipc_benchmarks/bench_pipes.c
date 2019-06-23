@@ -8,6 +8,8 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "bench_utils.h"
 
@@ -42,25 +44,27 @@ int main(int argc, char *argv[])
     if (0 == ret)
     {
         /* CHILD Process */
-        int i;
-        for (i = 0; i < sizes_num; i++)
+        close(pipe_parent_to_child[1]);
+
+        for (int i = 0; i < sizes_num; i++)
         {
-            int current_size = sizes[i];
-            int nread;
-            int j;
-            for (j = 0; j < MEASUREMENTS; j++)
+            for (int j = 0; j < MEASUREMENTS; j++)
             {
-                nread = read(pipe_parent_to_child[0], buffer, current_size);
+                int current_size = sizes[i];
+                do
+                {
+                    int nread = read(pipe_parent_to_child[0], buffer, current_size);
+					current_size -= nread;
+                } while (current_size > 0);
             }
-            assert(current_size == nread);
         }
 
         DEBUG(printf("PID:%d (CHILD) waits\n",
                      (int)pid));
-        ret = read(pipe_parent_to_child[0], buffer, 1);
+		pause();
+		close(pipe_parent_to_child[0]);
         DEBUG(printf("PID:%d (CHILD) exits\n",
                      (int)pid));
-        assert('q' == buffer[0]);
 
         return EXIT_SUCCESS;
     }
@@ -71,8 +75,9 @@ int main(int argc, char *argv[])
         ERROR("malloc", ENOMEM);
     memset(ticks, 0, MEASUREMENTS * sizeof(int));
 
-    int i;
-    for (i = 0; i < sizes_num; i++)
+	close(pipe_parent_to_child[0]);
+
+	for (int i = 0; i < sizes_num; i++)
     {
         int current_size = sizes[i];
         int nwrite;
@@ -123,8 +128,9 @@ int main(int argc, char *argv[])
 
     DEBUG(printf("PID:%d sending shutdown command\n",
                  (int)pid));
-    buffer[0] = 'q';
-    write(pipe_parent_to_child[1], buffer, 1);
+	kill(pid_child, SIGTERM);
+	wait(NULL);
+	close(pipe_parent_to_child[1]);
 
     return EXIT_SUCCESS;
 }

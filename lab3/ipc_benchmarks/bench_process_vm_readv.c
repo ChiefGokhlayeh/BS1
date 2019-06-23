@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/uio.h>
+#include <sys/wait.h>
 
 #include "bench_utils.h"
 
@@ -174,5 +175,9 @@ int main(int argc, char *argv[])
 
     // Tell Child to exit, too:
     write(pipe_parent_to_child[1], &pid, 1);
+
+	close(pipe_parent_to_child[1]);
+	wait(NULL);
+
     return EXIT_SUCCESS;
 }
