@@ -54,15 +54,15 @@ int main(int argc, char *argv[])
                 do
                 {
                     int nread = read(pipe_parent_to_child[0], buffer, current_size);
-					current_size -= nread;
+                    current_size -= nread;
                 } while (current_size > 0);
             }
         }
 
         DEBUG(printf("PID:%d (CHILD) waits\n",
                      (int)pid));
-		pause();
-		close(pipe_parent_to_child[0]);
+        pause();
+        close(pipe_parent_to_child[0]);
         DEBUG(printf("PID:%d (CHILD) exits\n",
                      (int)pid));
 
@@ -75,9 +75,9 @@ int main(int argc, char *argv[])
         ERROR("malloc", ENOMEM);
     memset(ticks, 0, MEASUREMENTS * sizeof(int));
 
-	close(pipe_parent_to_child[0]);
+    close(pipe_parent_to_child[0]);
 
-	for (int i = 0; i < sizes_num; i++)
+    for (int i = 0; i < sizes_num; i++)
     {
         int current_size = sizes[i];
         int nwrite;
@@ -128,9 +128,9 @@ int main(int argc, char *argv[])
 
     DEBUG(printf("PID:%d sending shutdown command\n",
                  (int)pid));
-	kill(pid_child, SIGTERM);
-	wait(NULL);
-	close(pipe_parent_to_child[1]);
+    kill(pid_child, SIGTERM);
+    wait(NULL);
+    close(pipe_parent_to_child[1]);
 
     return EXIT_SUCCESS;
 }

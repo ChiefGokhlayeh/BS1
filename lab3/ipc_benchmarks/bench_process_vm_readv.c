@@ -176,8 +176,8 @@ int main(int argc, char *argv[])
     // Tell Child to exit, too:
     write(pipe_parent_to_child[1], &pid, 1);
 
-	close(pipe_parent_to_child[1]);
-	wait(NULL);
+    close(pipe_parent_to_child[1]);
+    wait(NULL);
 
     return EXIT_SUCCESS;
 }
