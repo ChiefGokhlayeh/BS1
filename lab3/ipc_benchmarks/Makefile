@@ -43,6 +43,9 @@ $(PLOTABLE): $(BENCHMARKS)
 			set grid; \
 			set xlabel 'Transfer Size (in Bytes)'; \
 			set ylabel 'Speed (in MB/s)'; \
+			set xtics rotate by -45; \
+			set rmargin 10; \
+			set lmargin 10; \
 			plot '<cat' with linespoints title '${@:plot_%=%}' noenhanced";
 
 .PHONY: all clean plot $(PLOTABLE)
